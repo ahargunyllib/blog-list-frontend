@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Blog from './components/Blog'
 import Notification from './components/Notification'
+import Togglable from './components/Togglable'
 import blogService from './services/blogs'
 import loginService from './services/login'
 import usersService from './services/users'
@@ -17,10 +18,6 @@ const App = () => {
 	const [title, setTitle] = useState("");
 	const [author, setAuthor] = useState("");
 	const [url, setUrl] = useState("");
-	const [formVisible, setFormVisible] = useState(false);
-
-	const hideWhenVisible = { display: formVisible ? 'none' : '' }
-    const showWhenVisible = { display: formVisible ? '' : 'none' }
 
 	// useEffect(() => {
 	// 	blogService.getAll().then(blogs => setBlogs(blogs));
@@ -147,13 +144,9 @@ const App = () => {
 						</button>
 					</p>
 					<h2>create new</h2>
-					<div style={hideWhenVisible}>
-						<button onClick={() => setFormVisible(true)}>new note</button>
-					</div>
-					<div style={showWhenVisible}>
+					<Togglable buttonLabel="new blog">
 						{noteForm()}
-						<button onClick={() => setFormVisible(false)}>cancel</button>
-					</div>
+					</Togglable>
 					{blogs.map(blog => <Blog key={blog.id} blog={blog} />)}
 				</div>
 			}
