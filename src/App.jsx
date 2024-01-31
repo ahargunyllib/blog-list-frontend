@@ -17,6 +17,10 @@ const App = () => {
 	const [title, setTitle] = useState("");
 	const [author, setAuthor] = useState("");
 	const [url, setUrl] = useState("");
+	const [formVisible, setFormVisible] = useState(false);
+
+	const hideWhenVisible = { display: formVisible ? 'none' : '' }
+    const showWhenVisible = { display: formVisible ? '' : 'none' }
 
 	// useEffect(() => {
 	// 	blogService.getAll().then(blogs => setBlogs(blogs));
@@ -143,7 +147,13 @@ const App = () => {
 						</button>
 					</p>
 					<h2>create new</h2>
-					{noteForm()}
+					<div style={hideWhenVisible}>
+						<button onClick={() => setFormVisible(true)}>new note</button>
+					</div>
+					<div style={showWhenVisible}>
+						{noteForm()}
+						<button onClick={() => setFormVisible(false)}>cancel</button>
+					</div>
 					{blogs.map(blog => <Blog key={blog.id} blog={blog} />)}
 				</div>
 			}

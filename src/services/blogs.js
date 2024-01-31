@@ -1,28 +1,27 @@
-import axios from 'axios'
+import axios from "axios";
 
-axios.defaults.baseURL = "http://localhost:3001"
-const baseUrl = '/api/blogs'
+axios.defaults.baseURL = "https://blog-list-backend-production.up.railway.app";
+const baseUrl = "/api/blogs";
 
 let token = null;
 
-const setToken = newToken => token = `Bearer ${newToken}`;
+const setToken = (newToken) => (token = `Bearer ${newToken}`);
 
 const getAll = async () => {
   const response = await axios.get(baseUrl);
   return response.data;
-}
+};
 
-const create = async newObject => {
+const create = async (newObject) => {
   const config = { headers: { Authorization: token } };
 
   const response = await axios.post(baseUrl, newObject, config);
   return response.data;
-}
+};
 
 const update = async (id, newObject) => {
   const response = await axios.put(`${baseUrl}/${id}`, newObject);
   return response.data;
-}
+};
 
-
-export default { getAll, create, update, setToken }
+export default { getAll, create, update, setToken };
