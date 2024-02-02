@@ -10,6 +10,8 @@ import "./index.css";
 const App = () => {
 	const [notification, setNotification] = useState("");
 
+	const [allBlogs, setAllBlogs] = useState([]);
+	const [blogsId, setBlogsId] = useState([]);
 	const [blogs, setBlogs] = useState([]);
 	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
@@ -19,28 +21,35 @@ const App = () => {
 	const [author, setAuthor] = useState("");
 	const [url, setUrl] = useState("");
 
-	// useEffect(() => {
-	// 	blogService.getAll().then(blogs => setBlogs(blogs));
-	// }, []);
-
 	useEffect(() => {
-		const loggedUserJSON = window.localStorage.getItem("loggedBlogappUser");
-		const loggedBlogUserJSON = window.localStorage.getItem("loggedBlogappBlogUser");
-		const allBlogsJSON = window.localStorage.getItem("allBlogs");
-		if (loggedUserJSON) {
-			const parsedUser = JSON.parse(loggedUserJSON);
-			const parsedBlogUser = JSON.parse(loggedBlogUserJSON);
-			const parsedAllBlogs = JSON.parse(allBlogsJSON);
+		const fetchAllBlogs = async () => {
+			console.log('getting all blogs')
+			const allBlogsRes = await blogService.getAll()
+			setAllBlogs(allBlogsRes)
+			console.log('res: ', allBlogsRes)
+			console.log('allBlogs:', allBlogs)
 
-			setUser(parsedUser);
+			const loggedUserJSON = window.localStorage.getItem("loggedBlogappUser");
+			const loggedBlogUserJSON = window.localStorage.getItem("loggedBlogappBlogUser");
+			if (loggedUserJSON) {
+				console.log('user is logged in')
+				const parsedUser = JSON.parse(loggedUserJSON);
+				const parsedBlogUser = JSON.parse(loggedBlogUserJSON);
+	
+				setUser(parsedUser);
+				console.log('user is ', parsedUser)
+				setBlogsId(parsedBlogUser);
+				console.log('blogsId is ', parsedBlogUser)
+	
+				blogService.setToken(parsedUser.token);
 
-
-			let detailedUserBlogs = parsedAllBlogs.filter(a => parsedBlogUser.includes(a.id))
-			detailedUserBlogs.sort((b1, b2) => b1.likes < b2.likes ? 1 : b1.likes > b2.likes ? -1 : 0)
-			setBlogs(detailedUserBlogs);
-
-			blogService.setToken(parsedUser.token);
+				let detailedUserBlogs = allBlogsRes.filter(a => parsedBlogUser.includes(a.id))
+				detailedUserBlogs.sort((b1, b2) => b1.likes < b2.likes ? 1 : b1.likes > b2.likes ? -1 : 0)
+				setBlogs(detailedUserBlogs);
+				console.log('user blogs: ', detailedUserBlogs)
+			}
 		}
+		fetchAllBlogs()
 	}, []);
 
 	const handleLogin = async (event) => {
@@ -50,9 +59,6 @@ const App = () => {
 		try {
 			const user = await loginService.login({ username, password });
 			const userBlogs = await usersService.getBlogs(user.username);
-			const allBlogs = await blogService.getAll();
-
-			window.localStorage.setItem("allBlogs", JSON.stringify(allBlogs));
 
 			setUser(user);
 			window.localStorage.setItem("loggedBlogappUser", JSON.stringify(user));
@@ -77,15 +83,20 @@ const App = () => {
 		}
 	};
 
-	const handleCreateForm = async (event) => {
+	const handleCreateBlog = async (event) => {
 		event.preventDefault();
-		console.log("creating blog with ", title, author, url);
 
 		try {
 			await blogService.create({ title, author, url });
 			const userBlogs = await usersService.getBlogs(user.username);
-			window.localStorage.setItem("loggedBlogappBlogUser", JSON.stringify(userBlogs));
-			setBlogs(userBlogs.blogs);
+
+			let userBlogsIds = []
+			userBlogs.blogs.forEach(b => userBlogsIds.push(b.id))
+			window.localStorage.setItem("loggedBlogappBlogUser", JSON.stringify(userBlogsIds));
+			
+			let detailedUserBlogs = allBlogs.filter(a => userBlogsIds.includes(a.id))
+			detailedUserBlogs.sort((b1, b2) => b1.likes < b2.likes ? 1 : b1.likes > b2.likes ? -1 : 0)
+			setBlogs(() => detailedUserBlogs);
 
 			setTitle("");
 			setAuthor("");
@@ -102,6 +113,28 @@ const App = () => {
 			}, 5000);
 		}
 	};
+
+	const handleDeleteBlog = async (blog) => {		
+		if (window.confirm(`Remove blog ${blog.title} by ${blog.author}`)) {
+			try {
+				await blogService.remove(blog.id);
+				const userBlogs = await usersService.getBlogs(user.username);
+	
+				let userBlogsIds = []
+				userBlogs.blogs.forEach(b => userBlogsIds.push(b.id))
+				window.localStorage.setItem("loggedBlogappBlogUser", JSON.stringify(userBlogsIds));
+	
+				let detailedUserBlogs = allBlogs.filter(a => userBlogsIds.includes(a.id))
+				detailedUserBlogs.sort((b1, b2) => b1.likes < b2.likes ? 1 : b1.likes > b2.likes ? -1 : 0)
+				setBlogs(() => detailedUserBlogs);
+			} catch (exception) {
+				setNotification("wrong crendetials");
+				setTimeout(() => {
+					setNotification("");
+				}, 5000);
+			}
+		}
+	}
 
 	const loginForm = () => {
 		return (
@@ -123,9 +156,9 @@ const App = () => {
 		)
 	};
 
-	const noteForm = () => {
+	const blogForm = () => {
 		return (
-			<form onSubmit={handleCreateForm}>
+			<form onSubmit={handleCreateBlog}>
 				<div>
 					title
 					<input type="text" value={title} name="title" onChange={({ target }) => setTitle(target.value)}></input>
@@ -163,9 +196,9 @@ const App = () => {
 					</p>
 					<h2>create new</h2>
 					<Togglable buttonLabel="create new blog">
-						{noteForm()}
+						{blogForm()}
 					</Togglable>
-					{blogs.map(blog => <Blog key={blog.id} blog={blog} />)}
+					{blogs.map(blog => <Blog key={blog.id} blog={blog} handleDeleteBlog={handleDeleteBlog} />)}
 				</div>
 			}
 		</div>
