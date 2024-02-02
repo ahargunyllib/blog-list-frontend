@@ -26,11 +26,19 @@ const App = () => {
 	useEffect(() => {
 		const loggedUserJSON = window.localStorage.getItem("loggedBlogappUser");
 		const loggedBlogUserJSON = window.localStorage.getItem("loggedBlogappBlogUser");
+		const allBlogsJSON = window.localStorage.getItem("allBlogs");
 		if (loggedUserJSON) {
 			const parsedUser = JSON.parse(loggedUserJSON);
 			const parsedBlogUser = JSON.parse(loggedBlogUserJSON);
+			const parsedAllBlogs = JSON.parse(allBlogsJSON);
+
 			setUser(parsedUser);
-			setBlogs(parsedBlogUser);
+
+
+			let detailedUserBlogs = parsedAllBlogs.filter(a => parsedBlogUser.includes(a.id))
+			detailedUserBlogs.sort((b1, b2) => b1.likes < b2.likes ? 1 : b1.likes > b2.likes ? -1 : 0)
+			setBlogs(detailedUserBlogs);
+
 			blogService.setToken(parsedUser.token);
 		}
 	}, []);
@@ -44,15 +52,18 @@ const App = () => {
 			const userBlogs = await usersService.getBlogs(user.username);
 			const allBlogs = await blogService.getAll();
 
+			window.localStorage.setItem("allBlogs", JSON.stringify(allBlogs));
+
 			setUser(user);
 			window.localStorage.setItem("loggedBlogappUser", JSON.stringify(user));
 			
 			let userBlogsIds = []
 			userBlogs.blogs.forEach(b => userBlogsIds.push(b.id))
-			let detailedUserBlogs = allBlogs.filter(a => userBlogsIds.includes(a.id))
+			window.localStorage.setItem("loggedBlogappBlogUser", JSON.stringify(userBlogsIds));
 
+			let detailedUserBlogs = allBlogs.filter(a => userBlogsIds.includes(a.id))
+			detailedUserBlogs.sort((b1, b2) => b1.likes < b2.likes ? 1 : b1.likes > b2.likes ? -1 : 0)
 			setBlogs(detailedUserBlogs);
-			window.localStorage.setItem("loggedBlogappBlogUser", JSON.stringify(detailedUserBlogs));
 			
 			blogService.setToken(user.token);
 
