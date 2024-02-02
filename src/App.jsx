@@ -30,7 +30,7 @@ const App = () => {
 			const parsedUser = JSON.parse(loggedUserJSON);
 			const parsedBlogUser = JSON.parse(loggedBlogUserJSON);
 			setUser(parsedUser);
-			setBlogs(parsedBlogUser.blogs);
+			setBlogs(parsedBlogUser);
 			blogService.setToken(parsedUser.token);
 		}
 	}, []);
@@ -42,12 +42,19 @@ const App = () => {
 		try {
 			const user = await loginService.login({ username, password });
 			const userBlogs = await usersService.getBlogs(user.username);
+			const allBlogs = await blogService.getAll();
 
-			window.localStorage.setItem("loggedBlogappUser", JSON.stringify(user));
-			window.localStorage.setItem("loggedBlogappBlogUser", JSON.stringify(userBlogs));
-			blogService.setToken(user.token);
 			setUser(user);
-			setBlogs(userBlogs.blogs);
+			window.localStorage.setItem("loggedBlogappUser", JSON.stringify(user));
+			
+			let userBlogsIds = []
+			userBlogs.blogs.forEach(b => userBlogsIds.push(b.id))
+			let detailedUserBlogs = allBlogs.filter(a => userBlogsIds.includes(a.id))
+
+			setBlogs(detailedUserBlogs);
+			window.localStorage.setItem("loggedBlogappBlogUser", JSON.stringify(detailedUserBlogs));
+			
+			blogService.setToken(user.token);
 
 			setUsername("");
 			setPassword("");
